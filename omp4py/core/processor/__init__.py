@@ -5,3 +5,4 @@ import omp4py.core.processor.reduction
 import omp4py.core.processor.synchronization
 import omp4py.core.processor.tasking
 import omp4py.core.processor.workdistribution
+import omp4py.core.processor.gpu

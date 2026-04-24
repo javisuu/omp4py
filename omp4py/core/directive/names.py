@@ -19,6 +19,7 @@ D_BARRIER = "barrier"
 D_CRITICAL = "critical"
 D_TASK = "task"
 D_TASK_WAIT = "taskwait"
+D_TARGET = "target"
 
 # Clauses
 C_AFFINITY = "affinity"

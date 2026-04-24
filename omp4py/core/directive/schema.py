@@ -271,6 +271,8 @@ A dictionary of parseable  clauses, each associated with a Clause object.
 """
 
 DIRECTIVES: dict[str, Directive] = {
+    # Add the target directive recognition to the dictionary
+    D_TARGET: Directive(clauses=(C_MAP,)),
     # Data environment directives
     D_THREADPRIVATE: Directive(args=Arguments()),
     D_DECLARE: Directive(prefix=True),
