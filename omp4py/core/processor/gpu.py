@@ -34,7 +34,7 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
         #  if needed (e.g. "x" -> "x_mangled")
         mangled_args = []
         for arg in clause.args.array:
-            arg_name= ast.unparse(arg).strip()
+            arg_name= "".join([t.string for t in arg.tokens]).strip()
             # Get the mangled name if it exists, if not use the default name
             mangled_name = mangle.get(arg_name, arg_name)
             mangled_args.append(mangled_name)
