@@ -114,6 +114,8 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
         ""
     ]
 
+    cython_body_teardowns = [] # In this simple example we only have one output variable (pi_value), but this can be extended to multiple variables if needed
+
     for var in active_vars:
         type_info=_get_c_type_info(var, ctx)
         c_type=type_info["c_type"]
@@ -122,6 +124,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
         if var=="pi_value":
             cython_args.append(f"{c_type} *{var}_ptr")
             cython_body_inits.insert(0, f"    cdef {c_type} {var} = {var}_ptr[0]")
+            cython_body_teardowns.append(f"    {var}_ptr[0] = {var}")
         else:
             cython_args.append(f"{c_type} {var}")
     
@@ -146,12 +149,8 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     for line in loop_code.split('\n'):
         cython_lines.append(f"    {line}")
 
-    # Append the pointer copy-back
-    cython_lines.extend([
-        "",
-        "    pi_ptr[0] = pi_value",
-        ""
-    ])
+    cython_lines.append("") #Empty line between body and teardowns
+    cython_lines.extend(cython_body_teardowns) # Append the teardowns at the end of the function
 
     #Write the Cython code to disk
     with open(pyx_path, "w") as f:
