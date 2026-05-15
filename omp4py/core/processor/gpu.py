@@ -205,8 +205,8 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
         
         if var=="pi_value": #We asume that pi_value is the output pointer
             ctypes_argtypes.append(f"ctypes.POINTER({type_info['ctype_obj']})")
-            ptr_setup.append(f"_{var}_c={type_info['ctype_obj']}({var})")
-            ctypes_call_args.append(f"ctypes.byref(_{var}_c)")
+            ptr_setup.append(f"_{var}_c={type_info['ctype_obj']}({var})") #Allocate the variable in a physical C chunck of memory
+            ctypes_call_args.append(f"ctypes.byref(_{var}_c)") #byref id the memory address
             ptr_teardown.append(f"{var} = _{var}_c.value")
 
         else:
