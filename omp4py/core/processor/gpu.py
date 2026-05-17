@@ -27,7 +27,7 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
         if clause.args.modifiers: 
             for m in clause.args.modifiers: #Explore before ":"
                 if m.name in (names.M_TO, names.M_FROM, names.M_TOFROM):
-                    prefix = m.map + ":"
+                    prefix = m.name + ":"
                     break  # Only one for now
         
         # 3. Extract the arguments (e.g. "x, y, z") and apply mangling
@@ -65,6 +65,36 @@ def _get_c_type_info(var_name:str, ctx:NodeContext)->dict:
     # Default to double if no type hint is found
     return {"c_type": "double", "ctype_obj": "ctypes.c_double"}
 
+# Helper function to detect pointer variables
+#@args:   
+# clauses: List of OmpClause objects representing the clauses in the directive.
+# @return A set of variable names that are mapped as 'from' or 'tofrom' and require C-pointers for output
+
+def _get_pointer_variables(clauses:list[OmpClause])->set[str]:
+    """
+    Scan the OpenMP clause to find variables mapped as 'from' or 'tofrom' 
+    Theese variables require C-pointer to return their modified values back
+    """
+    pointer_vars= set()
+
+    for clause in clauses:
+        # We look only for map clauses with arguments
+        if clause.token.id=="map" and clause.args and hasattr(clause.args, "array") and clause.args.array:
+
+            is_output=False
+            if clause.args.modifiers:
+                for m in clause.args.modifiers:
+                    if m.name in (names.M_FROM, names.M_TOFROM):
+                        is_output=True
+                        break
+                # If we found an output we add its variables to the set
+            if is_output:
+                for arg in clause.args.array:
+                    arg_name= "".join([t.string for t in arg.tokens]).strip() #.tokens gives the raw string in pieces
+                    pointer_vars.add(arg_name)
+
+    return pointer_vars
+
 
 # Helper function in compilation_pipeline to inject the pragma into the generated C code
 # @args:
@@ -93,7 +123,7 @@ def __inject_pragma_into_c_code(c_path:str, body_id:int, pragma_str:str):
 #   pragma_str: The constructed OpenMP pragma string to inject into the C code
 #   active_vars: List of active variables in the loop
 #   ctx: Node context containing type information
-def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:list,ctx:NodeContext)->str:
+def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:list,ctx:NodeContext,pointer_vars:set[str])->str:
     """ Cython generation + C pragma injection + NVC compilation"""
     # Check if the build directory exists, if not create it
     build_dir = os.path.abspath("./gpu_build")
@@ -121,7 +151,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
         c_type=type_info["c_type"]
 
         # We still asume that pi_value is the output pointer
-        if var=="pi_value":
+        if var in pointer_vars:
             cython_args.append(f"{c_type} *{var}_ptr")
             cython_body_inits.insert(0, f"    cdef {c_type} {var} = {var}_ptr[0]")
             cython_body_teardowns.append(f"    {var}_ptr[0] = {var}")
@@ -190,8 +220,11 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     # 3. Pragma Construction
     pragma_str = _build_pragma_string(clauses, mangle_dict)
 
+    # NEW: 3.5 Detect which variables need physical memory pointers
+    pointer_vars = _get_pointer_variables(clauses)
+
     # 4. Compilation Pipeline
-    so_path = compilation_pipeline(body_id, loop_code, pragma_str, active_vars, ctx)
+    so_path = compilation_pipeline(body_id, loop_code, pragma_str, active_vars, ctx, pointer_vars)
 
     # 5. AST Replacement with ctypes execution node 
     ctypes_argtypes = [] # List of ctypes types for the function arguments, to be used in the runtime execution node
@@ -202,7 +235,7 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     for var in active_vars:
         type_info=_get_c_type_info(var, ctx)
         
-        if var=="pi_value": #We asume that pi_value is the output pointer
+        if var in pointer_vars:
             ctypes_argtypes.append(f"ctypes.POINTER({type_info['ctype_obj']})")
             ptr_setup.append(f"_{var}_c={type_info['ctype_obj']}({var})") #Allocate the variable in a physical C chunck of memory
             ctypes_call_args.append(f"ctypes.byref(_{var}_c)") #byref id the memory address

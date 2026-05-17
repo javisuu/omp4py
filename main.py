@@ -8,7 +8,7 @@ def target_reduction_pi(n: int):
     w = 1.0 / n
     pi_value = 0.0
     
-    with omp("target map(pi_value)"):
+    with omp("target map(tofrom: pi_value)"):
         for i in range(n):
             local_x = (i + 0.5) * w
             pi_value += 4.0 / (1.0 + local_x * local_x)
