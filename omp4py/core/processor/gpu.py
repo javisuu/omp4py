@@ -212,9 +212,16 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     body_id = id(body)
     loop_code = ast.unparse(body)
 
-    # 2. Variable Mangling Setup
-    # Extract all active variables and map them to their Cython C-equivalents
-    active_vars = [var for var in ctx.variables.names if not var.startswith('_')]
+    # 2. Variable Scope Filtering
+    # Identify variables actually used inside the loop AST to avoid passing functions/modules
+    loop_names = set()
+    for stmt in body:
+        for node in ast.walk(stmt):
+            if isinstance(node, ast.Name):
+                loop_names.add(node.id)
+
+    # Extract all active variables: must be in the context AND actually used in the loop
+    active_vars = [var for var in ctx.variables.names if not var.startswith('_') and var in loop_names]
     mangle_dict = {var: f"__pyx_v_{var}" for var in active_vars}
 
     # 3. Pragma Construction
