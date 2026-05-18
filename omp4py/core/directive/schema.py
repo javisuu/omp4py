@@ -171,6 +171,7 @@ MODIFIERS: dict[str, Modifier] = {
     M_STORAGE: Modifier(values=(M_STORAGE,), ),
     M_FROM: Modifier(values=(M_FROM,)),
     M_TO: Modifier(values=(M_TO,)),
+    M_TOFROM: Modifier(values=(M_TOFROM,)),
     M_ALWAYS: Modifier(values=(M_ALWAYS,)),
     M_CLOSE: Modifier(values=(M_CLOSE,)),
     M_PRESENT: Modifier(values=(M_PRESENT,)),

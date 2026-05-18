@@ -359,7 +359,7 @@ def _parse_modifiers(specs: Arguments, lpar: TokenInfo, tokens: list[TokenInfo],
                 pass
             elif mod_specs.token_match is not None and mod_specs.token_match(tokens[i:c_sep]):
                 pass
-            elif c_sep == i + 1 and mod_specs is not None and mod_specs.match(tokens[i].id, tokens[i].type):
+            elif c_sep == i + 1 and mod_specs is not None and mod_specs.match is not None and mod_specs.match(tokens[i].id, tokens[i].type):
                 pass
             elif c_sep > i + 1 and mod_specs is not None and \
                     mod_specs.match(tokenizer.untokenize(tokens[i:c_sep]).strip(), -1):
