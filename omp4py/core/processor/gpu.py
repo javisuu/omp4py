@@ -88,6 +88,9 @@ def _get_pointer_variables(clauses:list[OmpClause])->set[str]:
                         is_output=True
                         break
                 # If we found an output we add its variables to the set
+            else:
+                # If no modifiers are given, we assume it's a default map(tofrom)
+                is_output=True
             if is_output:
                 for arg in clause.args.array:
                     arg_name= "".join([t.string for t in arg.tokens]).strip() #.tokens gives the raw string in pieces
