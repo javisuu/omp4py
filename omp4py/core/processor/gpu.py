@@ -21,14 +21,16 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
         # 1. If the clause doesnt have args we just add it to parts[]
         if not clause.args or not clause.args.array:
             parts.append(clause.token.id)
+            continue
         
         # 2.  Extract and format the modifiers (e.g. to -> "to:")
         prefix=""
         if clause.args.modifiers: 
-            for m in clause.args.modifiers: #Explore before ":"
-                if m.name in (names.M_TO, names.M_FROM, names.M_TOFROM):
-                    prefix = m.name + ":"
-                    break  # Only one for now
+            #for m in clause.args.modifiers: #Explore before ":"
+                #if m.name in (names.M_TO, names.M_FROM, names.M_TOFROM):
+                m_name=clause.args.modifiers[0].name 
+                prefix = m_name + ":"
+                break  # Only one for now
         
         # 3. Extract the arguments (e.g. "x, y, z") and apply mangling
         #  if needed (e.g. "x" -> "x_mangled")
@@ -44,7 +46,7 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
         # 4. Combine the clause + prefix + arguments and create the pragma
         parts.append(f"{clause.token.id}({prefix}{vars_str})")
 
-        return "#pragma omp target " + " ".join(parts)
+    return "#pragma omp target " + " ".join(parts)
 
 
 # Helper function to extrtact the ctypes of a python variable (double as default)
@@ -95,6 +97,10 @@ def _get_pointer_variables(clauses:list[OmpClause])->set[str]:
                 for arg in clause.args.array:
                     arg_name= "".join([t.string for t in arg.tokens]).strip() #.tokens gives the raw string in pieces
                     pointer_vars.add(arg_name)
+        elif clause.token.id=="reduction" and clause.args and hasattr(clause.args, "array") and clause.args.array:
+            for arg in clause.args.array:
+                arg_name= "".join([t.string for t in arg.tokens]).strip()
+                pointer_vars.add(arg_name)
 
     return pointer_vars
 
