@@ -331,3 +331,20 @@ A dictionary of parseable  directives, each associated with a Directive object.
 DIRECTIVES.update([
     combine(D_PARALLEL, D_FOR, exclude={C_NOWAIT})
 ])
+
+# --- THE NATIVE COMBINED CONSTRUCT BUILDER ---
+# 1. Build "teams distribute"
+DIRECTIVES.update([
+    combine(D_TEAMS, D_DISTRIBUTE)
+])
+
+# 2. Build "teams distribute parallel for"
+# (combining the one we just made with the "parallel for" that already exists)
+DIRECTIVES.update([
+    combine(f"{D_TEAMS} {D_DISTRIBUTE}", f"{D_PARALLEL} {D_FOR}")
+])
+
+# 3. Build the ultimate GPU construct: "target teams distribute parallel for"
+DIRECTIVES.update([
+    combine(D_TARGET, f"{D_TEAMS} {D_DISTRIBUTE} {D_PARALLEL} {D_FOR}")
+])
