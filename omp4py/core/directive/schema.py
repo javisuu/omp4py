@@ -266,6 +266,12 @@ CLAUSES: dict[str, Clause] = {
     # Synchronization constructs
 
     # Cancellation constructs
+
+    # --- THE GPU COMBINED CONSTRUCT ---
+    D_TEAMS: Clause(),
+    D_DISTRIBUTE: Clause(),
+    D_PARALLEL: Clause(),
+    D_FOR: Clause()
 }
 """
 A dictionary of parseable  clauses, each associated with a Clause object.
@@ -273,7 +279,7 @@ A dictionary of parseable  clauses, each associated with a Clause object.
 
 DIRECTIVES: dict[str, Directive] = {
     # Add the target directive recognition to the dictionary
-    D_TARGET: Directive(clauses=(C_MAP, C_REDUCTION)),
+    D_TARGET: Directive(clauses=(C_MAP, C_REDUCTION, D_TEAMS, D_DISTRIBUTE, D_PARALLEL, D_FOR)),
     # Data environment directives
     D_THREADPRIVATE: Directive(args=Arguments()),
     D_DECLARE: Directive(prefix=True),
@@ -332,19 +338,3 @@ DIRECTIVES.update([
     combine(D_PARALLEL, D_FOR, exclude={C_NOWAIT})
 ])
 
-# --- THE NATIVE COMBINED CONSTRUCT BUILDER ---
-# 1. Build "teams distribute"
-DIRECTIVES.update([
-    combine(D_TEAMS, D_DISTRIBUTE)
-])
-
-# 2. Build "teams distribute parallel for"
-# (combining the one we just made with the "parallel for" that already exists)
-DIRECTIVES.update([
-    combine(f"{D_TEAMS} {D_DISTRIBUTE}", f"{D_PARALLEL} {D_FOR}")
-])
-
-# 3. Build the ultimate GPU construct: "target teams distribute parallel for"
-DIRECTIVES.update([
-    combine(D_TARGET, f"{D_TEAMS} {D_DISTRIBUTE} {D_PARALLEL} {D_FOR}")
-])
