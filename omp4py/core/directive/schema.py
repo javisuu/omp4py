@@ -267,11 +267,6 @@ CLAUSES: dict[str, Clause] = {
 
     # Cancellation constructs
 
-    # --- THE GPU COMBINED CONSTRUCT ---
-    D_TEAMS: Clause(),
-    D_DISTRIBUTE: Clause(),
-    D_PARALLEL: Clause(),
-    D_FOR: Clause()
 }
 """
 A dictionary of parseable  clauses, each associated with a Clause object.
@@ -279,7 +274,7 @@ A dictionary of parseable  clauses, each associated with a Clause object.
 
 DIRECTIVES: dict[str, Directive] = {
     # Add the target directive recognition to the dictionary
-    D_TARGET: Directive(clauses=(C_MAP, C_REDUCTION, D_TEAMS, D_DISTRIBUTE, D_PARALLEL, D_FOR)),
+    D_TARGET: Directive(clauses=(C_MAP, C_REDUCTION)),
     # Data environment directives
     D_THREADPRIVATE: Directive(args=Arguments()),
     D_DECLARE: Directive(prefix=True),
@@ -336,5 +331,26 @@ A dictionary of parseable  directives, each associated with a Directive object.
 # Update the DIRECTIVES dictionary with the combined directives.
 DIRECTIVES.update([
     combine(D_PARALLEL, D_FOR, exclude={C_NOWAIT})
+])
+
+# --- THE GPU COMBINED CONSTRUCT BRIDGE ---
+# 1. Build "target teams"
+DIRECTIVES.update([
+    combine(D_TARGET, D_TEAMS)
+])
+
+# 2. Build "target teams distribute"
+DIRECTIVES.update([
+    combine(f"{D_TARGET} {D_TEAMS}", D_DISTRIBUTE)
+])
+
+# 3. Build "target teams distribute parallel"
+DIRECTIVES.update([
+    combine(f"{D_TARGET} {D_TEAMS} {D_DISTRIBUTE}", D_PARALLEL)
+])
+
+# 4. Build the final "target teams distribute parallel for"
+DIRECTIVES.update([
+    combine(f"{D_TARGET} {D_TEAMS} {D_DISTRIBUTE} {D_PARALLEL}", D_FOR)
 ])
 
