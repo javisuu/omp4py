@@ -214,7 +214,7 @@ CLAUSES: dict[str, Clause] = {
     C_INCLUSIVE: Clause(args=Arguments()),
     C_INIT_COMPLETE: Clause(args=Arguments(require_args=False, transform=T_ITEM_ID,
                                            num_args=1, choices=(K_CREATE_INIT_PHASE,))),
-    C_MAP: Clause(required=True, repeatable=True,
+    C_MAP: Clause(required=False, repeatable=True,
                   args=Arguments(transform=T_ITEM_VAR,
                                  modifiers_groups=(Group(required=True, elems=(M_STORAGE, M_FROM, M_TO, M_TOFROM)),
                                                    Group(elems=(M_ALWAYS, M_CLOSE, M_PRESENT, M_MAPPER, M_ITERATOR))))),
