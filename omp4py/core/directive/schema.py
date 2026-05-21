@@ -333,24 +333,3 @@ DIRECTIVES.update([
     combine(D_PARALLEL, D_FOR, exclude={C_NOWAIT})
 ])
 
-# --- THE GPU COMBINED CONSTRUCT BRIDGE ---
-# 1. Build "target teams"
-DIRECTIVES.update([
-    combine(D_TARGET, D_TEAMS)
-])
-
-# 2. Build "target teams distribute"
-DIRECTIVES.update([
-    combine(f"{D_TARGET} {D_TEAMS}", D_DISTRIBUTE)
-])
-
-# 3. Build "target teams distribute parallel"
-DIRECTIVES.update([
-    combine(f"{D_TARGET} {D_TEAMS} {D_DISTRIBUTE}", D_PARALLEL)
-])
-
-# 4. Build the final "target teams distribute parallel for"
-DIRECTIVES.update([
-    combine(f"{D_TARGET} {D_TEAMS} {D_DISTRIBUTE} {D_PARALLEL}", D_FOR)
-])
-
