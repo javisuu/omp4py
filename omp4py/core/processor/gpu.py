@@ -18,6 +18,12 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
     parts = [] # Other directives includind map, parallel, etc.
 
     for clause in clauses:
+
+        #Support teams clause + distribute
+        if clause.token.id==names.D_TEAMS:
+            parts.append("teams distribute")
+            continue
+
         # 1. If the clause doesnt have args we just add it to parts[]
         if not clause.args or not clause.args.array:
             parts.append(clause.token.id)
@@ -30,7 +36,7 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
                 #if m.name in (names.M_TO, names.M_FROM, names.M_TOFROM):
                 m_name=clause.args.modifiers[0].name 
                 prefix = m_name + ":"
-                break  # Only one for now
+                
         
         # 3. Extract the arguments (e.g. "x, y, z") and apply mangling
         #  if needed (e.g. "x" -> "x_mangled")
