@@ -209,7 +209,13 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
 
     # 4. Compile to A100 .so Library
     py_include = sysconfig.get_path('include') or __import__('distutils.sysconfig').sysconfig.get_python_inc()
-    subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60)
+    try:
+        subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60)
+
+    except subprocess.CalledProcessError as e:
+        print("❌ Compilation failed with error:")
+        print(e)
+        raise e
     
     return so_path
 
