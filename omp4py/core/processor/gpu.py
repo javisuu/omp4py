@@ -31,7 +31,10 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
         
         # 2.  Extract and format the modifiers (e.g. to -> "to:")
         prefix=""
-        if clause.args.modifiers: 
+        if clause.args.modifiers:
+            if clause.token.id=="reduction":
+                prefix="+:"
+            else:
             #for m in clause.args.modifiers: #Explore before ":"
                 #if m.name in (names.M_TO, names.M_FROM, names.M_TOFROM):
                 m_name=clause.args.modifiers[0].name 
@@ -210,12 +213,13 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     # 4. Compile to A100 .so Library
     py_include = sysconfig.get_path('include') or __import__('distutils.sysconfig').sysconfig.get_python_inc()
     try:
-        subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60)
+        subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except subprocess.CalledProcessError as e:
         print("❌ Compilation failed with error:")
-        print(e)
-        raise e
+        error_msg = f"\n\n=== NVC FATAL ERROR ===\n{e.stderr}\n=======================\n"
+        raise RuntimeError(error_msg) from e
+        
     
     return so_path
 

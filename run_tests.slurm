@@ -29,6 +29,6 @@ cd $SLURM_SUBMIT_DIR
 # 3. Run the PyTest suite
 echo "🧪 Running OMP4Py GPU Test Suite..."
 # $HOME/miniconda3/envs/thesis_env/bin/pytest test/basic/test_target.py -v
-python main.py
+python -u main.py
 echo "----------------------------------------"
 echo "🏁 Tests Finished Successfully!"
