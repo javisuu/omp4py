@@ -134,6 +134,57 @@ def __inject_pragma_into_c_code(c_path:str, body_id:int, pragma_str:str):
             with open(c_path, 'w') as file:
                 file.write(c_code)  
 
+#Auxiliary class to dinamically extrac the variables used in the loop body and their types from the context, to be passed as arguments to the Cython function and then to the C kernel. This is needed to avoid passing functions/modules or unused variables that can cause compilation errors or runtime errors in the GPU execution.
+class LocalVariableExtractor(ast.NodeVisitor):
+    def __init__(self):
+        self.assigned_vars = set()
+        self.loop_vars = set()
+    
+    def visit_For(self, node):
+        # Extract loop variable (e.g. 'i' in 'for i in range(...)')
+        if isinstance(node.target, ast.Name):
+            self.assigned_vars.add(node.target.id)
+            self.loop_vars.add(node.target.id)
+        self.generic_visit(node)
+
+    def visit_Name(self,node):
+        # We consider as local variables those that are assigned within the loop
+        if isinstance(node.ctx, ast.Store):
+            self.assigned_vars.add(node.id)
+        self.generic_visit(node)
+
+#Helper function to generate the cython inits
+def _generate_cython_inits(loop_code:str,active_vars:list,ctx:NodeContext, body_id:int)->list[str]:
+    """
+    Generate the Cython variable initializations for the active variables, including the unique marker for pragma injection.
+    """
+    extractor = LocalVariableExtractor()
+    extractor.visit(ast.parse(loop_code))
+
+    # Loop variables 
+    loop_vars= extractor.assigned_vars - set(active_vars) #We consider loop variables as local variables, so we exclude them from the active variables list
+
+    inits=[]
+
+    for var in loop_vars:
+        if var in extractor.loop_vars:
+            # Loop index
+            c_type = "int"
+        else:
+            # Guess the type for standard assignments
+            type_info = _get_c_type_info(var, ctx)
+            c_type = type_info["c_type"]
+        inits.append(f"    cdef {c_type} {var}")
+
+    # Add the framework tracking marker
+    inits.append(f"    cdef int OMP4PY_MARKER_{body_id} = 0")
+    inits.append("") # Empty line for spacing
+
+    return inits
+
+
+
+
 # Main function to create A100 binary from Cython
 # @args:
 #   body_id: Unique identifier for the loop body to find the correct marker
@@ -155,12 +206,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     # 0. Dynamic construction of the Cython function with pointer arguments for active variables
     
     cython_args = []
-    cython_body_inits = [
-        "    cdef double local_x",
-        "    cdef int i",
-        f"    cdef int OMP4PY_MARKER_{body_id} = 0",
-        ""
-    ]
+    cython_body_inits = _generate_cython_inits(loop_code, active_vars, ctx, body_id) # Generate the Cython inits for local variables and the marker
 
     cython_body_teardowns = [] # In this simple example we only have one output variable (pi_value), but this can be extended to multiple variables if needed
 
