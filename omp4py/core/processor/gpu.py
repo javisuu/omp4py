@@ -19,7 +19,7 @@ def _build_pragma_string(clauses: list[OmpClause], mangle:dict[str,str])-> str:
 
     for clause in clauses:
 
-        #Support teams clause + distribute
+        #Support teams clause + distribute - TODO
         if clause.token.id==names.D_TEAMS:
             parts.append("teams distribute")
             continue
