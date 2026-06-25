@@ -268,6 +268,12 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
                         "-I" + str(py_include),
                         # Python 3.11+ reubicó longintrepr.h al subdir cpython/
                         "-I" + os.path.join(str(py_include), "cpython"),
+                        # nvc 21.2 no soporta los internals de CPython 3.12: forzamos la
+                        # rama portable de Cython apagando sus optimizaciones internas
+                        "-DCYTHON_USE_PYLONG_INTERNALS=0",
+                        "-DCYTHON_USE_DICT_VERSIONS=0",
+                        "-DCYTHON_USE_UNICODE_INTERNALS=0",
+                        "-DCYTHON_USE_TYPE_SLOTS=0",
                         "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
