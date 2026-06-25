@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath(".."))
 from omp4py import omp
 
 @omp()
-def calculo_tonto(N):
+def calculo_tonto(N: int):
     resultado = 0.0
     with omp("target map(tofrom: resultado)"):
         for i in range(N):
