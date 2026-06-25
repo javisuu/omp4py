@@ -25,7 +25,8 @@ echo "=========================================================="
 echo "  LANZANDO BENCHMARK DE CICLO DE VIDA (OMP4PY vs NUMBA)"
 echo "=========================================================="
 
-cd $HOME/open4py_TFG/cyton/omp4py
+# Raíz del repo = directorio desde el que se lanza el sbatch (reproducible)
+cd $SLURM_SUBMIT_DIR
 
 # Limpiamos cachés pero RESPETAMOS la carpeta contenedora si existe
 rm -f gpu_build/*.so
@@ -33,7 +34,7 @@ rm -f gpu_build/*.c
 
 # 3. Instalamos localmente y ejecutamos
 pip install -e .
-python -u benchmark_jit.py
+python -u scripts_analisis/benchmark_jit.py
 
 echo "=========================================================="
 echo "  BENCHMARK FINALIZADO"

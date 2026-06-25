@@ -19,11 +19,15 @@ echo "==============================================="
 echo "  MIDIENDO OVERHEAD (5 EJECUCIONES COLD START)"
 echo "==============================================="
 
+# Nos situamos en la raíz del repo para que ./gpu_build sea consistente
+cd $SLURM_SUBMIT_DIR
+
 # Aquí está el bucle mágico
-for i in {1..5}; do 
+for i in {1..5}; do
     echo "--- RUN $i ---"
-    rm -rf ../gpu_build
-    $HOME/miniconda3/envs/thesis_env/bin/python -u test_overhead.py | grep TELEMETRÍA
+    rm -rf gpu_build
+    # La telemetría se emite por stderr, por eso redirigimos 2>&1 antes del grep
+    $HOME/miniconda3/envs/thesis_env/bin/python -u scripts_analisis/test_overhead/test_overhead.py 2>&1 | grep TELEMETRÍA
 done
 
 echo "==============================================="

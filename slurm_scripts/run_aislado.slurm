@@ -14,6 +14,9 @@ module load nvhpc/21.2
 
 export OMP_TARGET_OFFLOAD=MANDATORY
 
+# Raíz del repo = directorio desde el que se lanza el sbatch (reproducible)
+cd $SLURM_SUBMIT_DIR
+
 # Variable con tu ruta absoluta de Python para evitar fallos de Numba/Conda
 PY_BIN="$HOME/miniconda3/envs/thesis_env/bin/python"
 
@@ -30,11 +33,11 @@ for N in "${VALORES_N[@]}"; do
     for iteracion in {1..10}; do
         
         # 1. Medir Numba
-        t_numba=$($PY_BIN -u aislado.py numba $N)
+        t_numba=$($PY_BIN -u scripts_analisis/aislado.py numba $N)
         echo "numba,$N,$iteracion,$t_numba" >> $ARCHIVO_OUT
-        
+
         # 2. Medir omp4py
-        t_omp=$($PY_BIN -u aislado.py omp4py $N)
+        t_omp=$($PY_BIN -u scripts_analisis/aislado.py omp4py $N)
         echo "omp4py,$N,$iteracion,$t_omp" >> $ARCHIVO_OUT
         
     done

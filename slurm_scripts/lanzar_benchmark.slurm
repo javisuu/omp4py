@@ -20,5 +20,8 @@ conda activate thesis_env
 # 3. Forzar ejecución en hardware real sin fallback
 export OMP_TARGET_OFFLOAD=MANDATORY
 
-# 4. Lanzar el script de Python
-python benchmark_cpu_gpu.py
+# 4. Raíz del repo = directorio desde el que se lanza el sbatch (reproducible)
+cd $SLURM_SUBMIT_DIR
+
+# 5. Lanzar el script de Python
+python scripts_analisis/benchmark_cpu_gpu.py
