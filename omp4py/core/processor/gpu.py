@@ -268,10 +268,6 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
                         "-I" + str(py_include),
                         # Python 3.11+ reubicó longintrepr.h al subdir cpython/
                         "-I" + os.path.join(str(py_include), "cpython"),
-                        # Interruptor maestro: fuerza a Cython a usar SOLO API pública
-                        # portable (sin tocar structs internos de CPython 3.12 que
-                        # nvc 21.2 no soporta: ob_digit, curexc_type, _frame, etc.)
-                        "-DCYTHON_COMPILING_IN_CPYTHON=0",
                         "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
