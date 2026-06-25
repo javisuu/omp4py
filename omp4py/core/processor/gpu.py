@@ -264,17 +264,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     # 4. Compile to A100 .so Library
     py_include = sysconfig.get_path('include') or __import__('distutils.sysconfig').sysconfig.get_python_inc()
     try:
-        subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path,
-                        "-I" + str(py_include),
-                        # Python 3.11+ reubicó longintrepr.h al subdir cpython/
-                        "-I" + os.path.join(str(py_include), "cpython"),
-                        # nvc 21.2 no soporta los internals de CPython 3.12: forzamos la
-                        # rama portable de Cython apagando sus optimizaciones internas
-                        "-DCYTHON_USE_PYLONG_INTERNALS=0",
-                        "-DCYTHON_USE_DICT_VERSIONS=0",
-                        "-DCYTHON_USE_UNICODE_INTERNALS=0",
-                        "-DCYTHON_USE_TYPE_SLOTS=0",
-                        "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
+        subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
         # [DEBUG-REVERT] Destapar el error real del compilador en vez de tragarlo
