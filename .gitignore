@@ -1,0 +1,27 @@
+# Evitar subir los logs de SLURM del CESGA
+slurm-*.out
+slurm-*.err
+thesis_test_*.out
+thesis_test_*.err
+benchmark_justo_*.out
+benchmark_justo_*.err
+
+# Evitar subir los reportes de telemetría de Nsight Systems
+*.nsys-rep
+*.qdrep
+*.sqlite
+
+# Carpetas de compilación local y cachés
+.omp4py_cache/
+gpu_build/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.so
+*.c
+coverage_html_report/
+# Permitir las carpetas de scripts pero ignorar binarios dentro de ellas
+scripts_analisis/*.so
+scripts_analisis/__pycache__/
+slurm_scripts/__pycache__/

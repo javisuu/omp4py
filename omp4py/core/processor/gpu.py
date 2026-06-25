@@ -3,7 +3,7 @@ import os
 import subprocess
 import sysconfig
 import re
-
+import time #TEMP
 # Import OMP4Py core contracts
 from omp4py.core.directive import names, OmpClause, OmpArgs
 from omp4py.core.processor.processor import omp_processor
@@ -203,6 +203,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     c_path = os.path.join(build_dir, f"kernel_{body_id}.c")
     so_path = os.path.join(build_dir, f"kernel_{body_id}.so")
 
+    t0_cython=time.perf_counter() #TEMP
     # 0. Dynamic construction of the Cython function with pointer arguments for active variables
     
     cython_args = []
@@ -256,17 +257,20 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     #3. Inyect the pragma into the generated C code
     __inject_pragma_into_c_code(c_path, body_id, pragma_str)
 
+    t1_cython = time.perf_counter() #TEMP
+    print(f"[TELEMETRÍA] 2. Generación Cython/C: {(t1_cython - t0_cython) * 1000:.3f} ms")
+    t0_nvc = time.perf_counter()
     # 4. Compile to A100 .so Library
     py_include = sysconfig.get_path('include') or __import__('distutils.sysconfig').sysconfig.get_python_inc()
     try:
         subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
-    except subprocess.CalledProcessError as e:
-        print("❌ Compilation failed with error:")
-        error_msg = f"\n\n=== NVC FATAL ERROR ===\n{e.stderr}\n=======================\n"
-        raise RuntimeError(error_msg) from e
+    except (subprocess.CalledProcessError,FileNotFoundError) as e:
+        return None
         
-    
+    t1_nvc = time.perf_counter() #TEMP
+    print(f"[TELEMETRÍA] 3. Compilación NVC:     {(t1_nvc - t0_nvc) * 1000:.3f} ms\n")
+
     return so_path
 
 # MAIN FUNCTION: OMP4Py GPU Backend Compiler
@@ -279,6 +283,12 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     Intercepts 'target' directives, dynamically compiles the loop to an A100 GPU binary,
     and replaces the Python AST with a ctypes runtime execution node using pure C pointers.
     """
+    #print("\n" + "="*45)
+    #print("INICIANDO COMPILACIÓN JIT (omp4py)")
+    #print("="*45)
+
+    t0_ast = time.perf_counter()
+
     # 1. Setup & Code Extraction
     body_id = id(body)
     loop_code = ast.unparse(body)
@@ -301,9 +311,16 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     # NEW: 3.5 Detect which variables need physical memory pointers
     pointer_vars = _get_pointer_variables(clauses)
 
+    t1_ast = time.perf_counter()
+    print(f"[TELEMETRÍA] 1. Frontend AST/Tipos:  {(t1_ast - t0_ast) * 1000:.3f} ms")
+
     # 4. Compilation Pipeline
     so_path = compilation_pipeline(body_id, loop_code, pragma_str, active_vars, ctx, pointer_vars)
 
+    # If compilation fails so_path is none and the execution is in the CPU
+    if so_path is None:
+        raise RuntimeError("🚨 [CRITICAL] Fallback detectado en el pipeline del JIT")
+        return body
     # 5. AST Replacement with ctypes execution node 
     ctypes_argtypes = [] # List of ctypes types for the function arguments, to be used in the runtime execution node
     ctypes_call_args = [] # List of arguments to pass to the ctypes function call in the runtime execution node
@@ -350,7 +367,11 @@ _gpu_lib.gpu_kernel({call_args_str})
 # Extract pointer values back to Python
 {teardown_str}
 """
-
+    # Calculamos el tiempo total de todo el JIT
+    t_total_fin = time.perf_counter()
+    print("-" * 45)
+    print(f"[TELEMETRÍA] OVERHEAD JIT TOTAL:     {(t_total_fin - t0_ast) * 1000:.3f} ms")
+    print("="*45 + "\n")
 
     # Parse the runtime code into AST and return it.
     return ast.parse(runtime_execution_code).body

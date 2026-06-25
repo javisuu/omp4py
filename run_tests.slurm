@@ -26,9 +26,13 @@ conda activate thesis_env
 # 2. Navigate to the directory (SLURM usually starts where you submit, but just to be safe)
 cd $SLURM_SUBMIT_DIR
 
+#Forbid CPU exection of target
+export OMP_TARGET_OFFLOAD=MANDATORY
 # 3. Run the PyTest suite
 echo "🧪 Running OMP4Py GPU Test Suite..."
 # $HOME/miniconda3/envs/thesis_env/bin/pytest test/basic/test_target.py -v
-python -u main.py
+# python -u main.py
+# Capture the hardware telemetry
+nsys profile --stats=true -o thesis_pi_trace $HOME/miniconda3/envs/thesis_env/bin/python -u main.py
 echo "----------------------------------------"
 echo "🏁 Tests Finished Successfully!"
