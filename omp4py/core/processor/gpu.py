@@ -267,6 +267,8 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
         subprocess.run(["nvc", "-mp=gpu", "-fPIC", "-shared", c_path, "-I" + str(py_include), "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
+        # [DEBUG-REVERT] Destapar el error real del compilador en vez de tragarlo
+        print(f"[JIT-FAIL] cython/nvc falló:\n{getattr(e, 'stderr', '')}\n{getattr(e, 'stdout', '')}", file=sys.stderr)
         return None
         
     t1_nvc = time.perf_counter() #TEMP

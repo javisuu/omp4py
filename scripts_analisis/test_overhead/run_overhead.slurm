@@ -22,12 +22,18 @@ echo "==============================================="
 # Nos situamos en la raíz del repo para que ./gpu_build sea consistente
 cd $SLURM_SUBMIT_DIR
 
+# [DEBUG-REVERT] Diagnóstico de entorno (PATH de cython/nvc)
+echo "PYTHON: $($HOME/miniconda3/envs/thesis_env/bin/python -c 'import sys;print(sys.executable)')"
+echo "CYTHON: $(command -v cython)"
+echo "NVC:    $(command -v nvc)"
+echo "PWD:    $(pwd)"
+
 # Aquí está el bucle mágico
 for i in {1..5}; do
     echo "--- RUN $i ---"
     rm -rf gpu_build
-    # La telemetría se emite por stderr, por eso redirigimos 2>&1 antes del grep
-    $HOME/miniconda3/envs/thesis_env/bin/python -u scripts_analisis/test_overhead/test_overhead.py 2>&1 | grep TELEMETRÍA
+    # [DEBUG-REVERT] grep TELEMETRÍA quitado temporalmente para ver el traceback real
+    $HOME/miniconda3/envs/thesis_env/bin/python -u scripts_analisis/test_overhead/test_overhead.py 2>&1
 done
 
 echo "==============================================="
