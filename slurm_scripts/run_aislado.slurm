@@ -22,12 +22,6 @@ conda activate thesis_env
 # Variable con tu ruta absoluta de Python para evitar fallos de Numba/Conda
 PY_BIN="$HOME/miniconda3/envs/thesis_env/bin/python"
 
-# [DEBUG-REVERT] Diagnóstico de entorno (PATH de cython/nvc)
-echo "PYTHON: $($PY_BIN -c 'import sys;print(sys.executable)')"
-echo "CYTHON: $(command -v cython)"
-echo "NVC:    $(command -v nvc)"
-echo "PWD:    $(pwd)"
-
 # Crear el archivo de resultados y ponerle cabecera
 ARCHIVO_OUT="resultados_benchmark.csv"
 echo "Motor,N,Iteracion,Tiempo_s" > $ARCHIVO_OUT

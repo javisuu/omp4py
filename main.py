@@ -1,6 +1,5 @@
 import math
 import time
-import numpy as np
 from omp4py import omp
 
 @omp(debug=True)

@@ -22,18 +22,15 @@ echo "==============================================="
 # Nos situamos en la raíz del repo para que ./gpu_build sea consistente
 cd $SLURM_SUBMIT_DIR
 
-# [DEBUG-REVERT] Diagnóstico de entorno (PATH de cython/nvc)
-echo "PYTHON: $($HOME/miniconda3/envs/thesis_env/bin/python -c 'import sys;print(sys.executable)')"
-echo "CYTHON: $(command -v cython)"
-echo "NVC:    $(command -v nvc)"
-echo "PWD:    $(pwd)"
+# Activamos la instrumentación de overhead (gateada en gpu.py)
+export OMP4PY_TELEMETRY=1
 
 # Aquí está el bucle mágico
 for i in {1..5}; do
     echo "--- RUN $i ---"
     rm -rf gpu_build
-    # [DEBUG-REVERT] grep TELEMETRÍA quitado temporalmente para ver el traceback real
-    $HOME/miniconda3/envs/thesis_env/bin/python -u scripts_analisis/test_overhead/test_overhead.py 2>&1
+    # La telemetría se emite por stderr; 2>&1 antes del grep para capturarla
+    $HOME/miniconda3/envs/thesis_env/bin/python -u scripts_analisis/test_overhead/test_overhead.py 2>&1 | grep TELEMETRÍA
 done
 
 echo "==============================================="

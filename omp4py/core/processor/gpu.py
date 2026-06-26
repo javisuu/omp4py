@@ -5,11 +5,14 @@ import subprocess
 import sysconfig
 import re
 import warnings
-import time #TEMP
+import time
 # Import OMP4Py core contracts
 from omp4py.core.directive import names, OmpClause, OmpArgs
 from omp4py.core.processor.processor import omp_processor
 from omp4py.core.processor.nodes import NodeContext
+
+# Instrumentación opcional del overhead JIT: export OMP4PY_TELEMETRY=1 para activarla
+_TELEMETRY = bool(os.environ.get("OMP4PY_TELEMETRY"))
 
  
 # Dinamic construction of the OMP pragma string
@@ -205,7 +208,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     c_path = os.path.join(build_dir, f"kernel_{body_id}.c")
     so_path = os.path.join(build_dir, f"kernel_{body_id}.so")
 
-    t0_cython=time.perf_counter() #TEMP
+    t0_cython=time.perf_counter()
     # 0. Dynamic construction of the Cython function with pointer arguments for active variables
     
     cython_args = []
@@ -264,8 +267,9 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     #3. Inyect the pragma into the generated C code
     __inject_pragma_into_c_code(c_path, body_id, pragma_str)
 
-    t1_cython = time.perf_counter() #TEMP
-    print(f"[TELEMETRÍA] 2. Generación Cython/C: {(t1_cython - t0_cython) * 1000:.3f} ms", file=sys.stderr)
+    t1_cython = time.perf_counter()
+    if _TELEMETRY:
+        print(f"[TELEMETRÍA] 2. Generación Cython/C: {(t1_cython - t0_cython) * 1000:.3f} ms", file=sys.stderr)
     t0_nvc = time.perf_counter()
     # 4. Compile to A100 .so Library
     py_include = sysconfig.get_path('include') or __import__('distutils.sysconfig').sysconfig.get_python_inc()
@@ -284,8 +288,9 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
         # Capa 2 (backend): la compilación nativa falló -> señal de fallback a CPU
         return None
         
-    t1_nvc = time.perf_counter() #TEMP
-    print(f"[TELEMETRÍA] 3. Compilación NVC:     {(t1_nvc - t0_nvc) * 1000:.3f} ms\n", file=sys.stderr)
+    t1_nvc = time.perf_counter()
+    if _TELEMETRY:
+        print(f"[TELEMETRÍA] 3. Compilación NVC:     {(t1_nvc - t0_nvc) * 1000:.3f} ms\n", file=sys.stderr)
 
     return so_path
 
@@ -328,7 +333,8 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     pointer_vars = _get_pointer_variables(clauses)
 
     t1_ast = time.perf_counter()
-    print(f"[TELEMETRÍA] 1. Frontend AST/Tipos:  {(t1_ast - t0_ast) * 1000:.3f} ms", file=sys.stderr)
+    if _TELEMETRY:
+        print(f"[TELEMETRÍA] 1. Frontend AST/Tipos:  {(t1_ast - t0_ast) * 1000:.3f} ms", file=sys.stderr)
 
     # 4. Compilation Pipeline
     so_path = compilation_pipeline(body_id, loop_code, pragma_str, active_vars, ctx, pointer_vars)
@@ -391,9 +397,10 @@ _gpu_lib.gpu_kernel({call_args_str})
 """
     # Calculamos el tiempo total de todo el JIT
     t_total_fin = time.perf_counter()
-    print("-" * 45, file=sys.stderr)
-    print(f"[TELEMETRÍA] OVERHEAD JIT TOTAL:     {(t_total_fin - t0_ast) * 1000:.3f} ms", file=sys.stderr)
-    print("="*45 + "\n", file=sys.stderr)
+    if _TELEMETRY:
+        print("-" * 45, file=sys.stderr)
+        print(f"[TELEMETRÍA] OVERHEAD JIT TOTAL:     {(t_total_fin - t0_ast) * 1000:.3f} ms", file=sys.stderr)
+        print("="*45 + "\n", file=sys.stderr)
 
     # Parse the runtime code into AST and return it.
     return ast.parse(runtime_execution_code).body
