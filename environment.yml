@@ -1,0 +1,13 @@
+name: thesis_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - numba
+  - pip
+  - pip:
+      # Cython 3.1.x: 0.29.x no soporta Python 3.12 y 3.2.x rompe la compilación
+      # con nvc 21.2. Validado con 3.1.8.
+      - cython==3.1.8
+# Tras crear el entorno:  pip install -e .   (instala omp4py en modo editable)
