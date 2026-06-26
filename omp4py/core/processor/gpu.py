@@ -4,6 +4,7 @@ import sys
 import subprocess
 import sysconfig
 import re
+import warnings
 import time #TEMP
 # Import OMP4Py core contracts
 from omp4py.core.directive import names, OmpClause, OmpArgs
@@ -275,8 +276,7 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
                         "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
-        # [DEBUG-REVERT] Destapar el error real del compilador en vez de tragarlo
-        print(f"[JIT-FAIL] cython/nvc falló:\n{getattr(e, 'stderr', '')}\n{getattr(e, 'stdout', '')}", file=sys.stderr)
+        # Capa 2 (backend): la compilación nativa falló -> señal de fallback a CPU
         return None
         
     t1_nvc = time.perf_counter() #TEMP
@@ -328,9 +328,15 @@ def target(body: list[ast.stmt], clauses: list[OmpClause], args: OmpArgs | None,
     # 4. Compilation Pipeline
     so_path = compilation_pipeline(body_id, loop_code, pragma_str, active_vars, ctx, pointer_vars)
 
-    # If compilation fails so_path is none and the execution is in the CPU
+    # Degradación elegante (graceful degradation): si la compilación a GPU falla,
+    # se avisa al usuario y se devuelve el cuerpo original para ejecutar en CPU,
+    # preservando la corrección del cálculo en lugar de abortar.
     if so_path is None:
-        raise RuntimeError("🚨 [CRITICAL] Fallback detectado en el pipeline del JIT")
+        warnings.warn(
+            "omp4py: la región 'target' no pudo compilarse para GPU; "
+            "ejecutando en CPU (fallback).",
+            RuntimeWarning, stacklevel=2,
+        )
         return body
     # 5. AST Replacement with ctypes execution node 
     ctypes_argtypes = [] # List of ctypes types for the function arguments, to be used in the runtime execution node
