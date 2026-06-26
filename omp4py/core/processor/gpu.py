@@ -253,8 +253,13 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
     with open(pyx_path, "w") as f:
         f.write("\n".join(cython_lines))
 
-    # 2. Translate to C
-    subprocess.run(["cython", pyx_path], check=True)
+    # 2. Translate to C. Si Cython falla (p.ej. tipos no soportados como dicts o
+    # strings dentro de la región), devolvemos None para que el procesador 'target'
+    # aplique la degradación elegante a CPU en vez de abortar el programa.
+    try:
+        subprocess.run(["cython", pyx_path], check=True, capture_output=True, text=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
     #3. Inyect the pragma into the generated C code
     __inject_pragma_into_c_code(c_path, body_id, pragma_str)
