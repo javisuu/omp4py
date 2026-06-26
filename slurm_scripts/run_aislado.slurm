@@ -16,7 +16,9 @@ export OMP_TARGET_OFFLOAD=MANDATORY
 
 # Raíz del repo = directorio desde el que se lanza el sbatch (reproducible)
 cd $SLURM_SUBMIT_DIR
-
+#Activacion del entorno
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate thesis_env
 # Variable con tu ruta absoluta de Python para evitar fallos de Numba/Conda
 PY_BIN="$HOME/miniconda3/envs/thesis_env/bin/python"
 
