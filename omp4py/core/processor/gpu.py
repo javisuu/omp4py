@@ -268,6 +268,10 @@ def compilation_pipeline(body_id:int, loop_code:str,pragma_str:str, active_vars:
                         "-I" + str(py_include),
                         # Python 3.11+ reubicó longintrepr.h al subdir cpython/
                         "-I" + os.path.join(str(py_include), "cpython"),
+                        # El boilerplate del módulo Cython accede a structs internos de
+                        # CPython 3.12 (ob_digit, curexc_type, _frame) que nvc 21.2 no
+                        # compila. Forzamos la rama portable (solo API pública).
+                        "-DCYTHON_COMPILING_IN_CPYTHON=0",
                         "-o", so_path], check=True, timeout=60, capture_output=True, text=True)
 
     except (subprocess.CalledProcessError,FileNotFoundError) as e:
